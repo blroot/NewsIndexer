@@ -45,20 +45,23 @@ class NewsReader:
                             article_title = article.find('title')
                             article_date = article.find('pubDate')
 
-                            article_title.text = self.normalize_value(article_title.text)
-                            article_date.text = self.normalize_value(article_date.text)
+                            try:
+                                article_title.text = self.normalize_value(article_title.text)
+                                article_date.text = self.normalize_value(article_date.text)
 
-                            search_filter = './item[title=' + '"' + article_title.text + '"' + "]" \
-                                            + '[pubDate=' + '"' + article_date.text + '"' + ']'
+                                search_filter = './item[title=' + '"' + article_title.text + '"' + "]" \
+                                                + '[pubDate=' + '"' + article_date.text + '"' + ']'
 
-                            print("Searching : %s" % search_filter)
+                                print("Searching : %s" % search_filter)
 
-                            all_items = root.findall(search_filter)
+                                all_items = root.findall(search_filter)
 
-                            if len(all_items) == 0:
-                                print("Saving new article -> Title: %s, Date: %s"
-                                      % (article_title.text, article_date.text))
-                                root.append(article)
+                                if len(all_items) == 0:
+                                    print("Saving new article -> Title: %s, Date: %s"
+                                          % (article_title.text, article_date.text))
+                                    root.append(article)
+                            except AttributeError:
+                                print("Mal formato de título o fecha")
 
                         tree_output.write(output_xml_file)
 
