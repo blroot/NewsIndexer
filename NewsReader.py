@@ -3,7 +3,6 @@ import xml.etree.ElementTree as ET
 import requests
 import time
 import os
-from xml.sax.saxutils import quoteattr
 
 
 class NewsReader:
@@ -28,8 +27,17 @@ class NewsReader:
                     if option not in ['url_base', 'query_interval', 'tmp', 'output', 'iterations']:
                         print("Downloading from url: %s" % url_base + config[section][option])
 
-                        xml_data = requests.get(url_base + config[section][option])
-                        tree = ET.ElementTree(ET.fromstring(xml_data.content))
+                        try:
+                            xml_data = requests.get(url_base + config[section][option])
+                        except requests.exceptions.ChunkedEncodingError:
+                            print("No se pudo descargar el XML")
+                            continue
+                        try:
+                            tree = ET.ElementTree(ET.fromstring(xml_data.content))
+                        except ET.ParseError:
+                            print("No se pudo parsear el XML")
+                            continue
+
                         root = tree.getroot()
                         news_list = root.findall('./channel/item')
                         normalized_option = self.normalize_name(option)
