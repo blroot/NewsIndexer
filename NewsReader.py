@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 import requests
 import time
 import os
+from Normalizer import Normalizer
 
 
 class NewsReader:
@@ -40,7 +41,7 @@ class NewsReader:
 
                         root = tree.getroot()
                         news_list = root.findall('./channel/item')
-                        normalized_option = self.normalize_name(option)
+                        normalized_option = Normalizer.normalize_name(option)
 
                         self.create_dir_if_not_exists(section)
 
@@ -87,19 +88,6 @@ class NewsReader:
     @staticmethod
     def normalize_value(value):
         return value.strip("\n").replace('"', "&quot;").strip()
-
-    @staticmethod
-    def normalize_name(name):
-        replace_dict = {"á": "a", "é": "e", "í": "i", "ó": "o",
-                        "ú": "u", ",": "", ".": "", ":": "", ";": "",
-                        "?": "", "¿": "", "!": "", "¡": "", "«": "",
-                        "»": "", '"': "", "(": "", ")": "", "[": "",
-                        "]": "", " ": "-"}
-        for char in name:
-            if char in replace_dict.keys():
-                name = name.replace(char, replace_dict.get(char))
-
-        return name.lower()
 
     def create_dir_if_not_exists(self, name):
         if not os.path.exists(self.output + '/' + name):
