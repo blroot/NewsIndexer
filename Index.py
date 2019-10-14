@@ -1,6 +1,7 @@
 import configparser
 from Normalizer import Normalizer
 from XMLUtil import XMLUtil
+from UncompressedPostings import UncompressedPostings
 
 
 class Index:
@@ -10,7 +11,8 @@ class Index:
         self._term_dict = term_dict
         self._document_dict_next_id = 0
         self._term_dict_next_id = 0
-        self._ii = {}
+        self._ii_dict = {}
+        self._ii_list = []
 
     def get_block_list(self):
         config = configparser.ConfigParser()
@@ -57,8 +59,15 @@ class Index:
         cleaned_terms = [normalizer.normalize_name(x) for x in all_terms if not normalizer.is_stop_word(normalizer.normalize_name(x))]
         for term in cleaned_terms:
             term_id = self.get_or_create_term_id(term)
-            self._ii.setdefault(term_id, set())
-            self._ii[term_id].add(self._document_dict.get(doc_key))
+            self._ii_dict.setdefault(term_id, set())
+            self._ii_dict[term_id].add(self._document_dict.get(doc_key))
+
+        self._ii_list = [(x, UncompressedPostings.encode(self._ii_dict[x])) for x in sorted(self._ii_dict.keys())]
+        print(self._ii_list)
+
+        # Reset ii
+        self._ii_dict = {}
+        self._ii_list = []
 
     def get_or_create_term_id(self, term):
         if term not in self._term_dict.keys():
