@@ -23,7 +23,6 @@ class Index:
 
         self._output = config["DEFAULT"]["output"]
 
-        block_list = []
         block_dict = {}
 
         for section in config.sections():
@@ -32,7 +31,6 @@ class Index:
                 if option not in ['url_base', 'query_interval', 'tmp', 'output', 'iterations']:
                     normalized_option = Normalizer.normalize_name(option)
                     output_xml_file = self._output + '/' + section + '/' + normalized_option + ".xml"
-                    # block_list.append((section, option, output_xml_file, section))
                     block_dict[section].append((option, output_xml_file))
 
         return block_dict
@@ -53,27 +51,42 @@ class Index:
 
         for section in block_dict:
             channel_list = block_dict[section]
-            for channel in channel_list:
-                xml_util = XMLUtil(channel[1])
+            ii_part_out = self._output + '/' + section + "/" + section + ".ii.part"
 
-                try:
-                    doc_list = xml_util.get_document_list()
+            try:
+                with open(ii_part_out, "w", newline='') as ii_part:
+                    writer = csv.writer(ii_part)
+                    for channel in channel_list:
+                        xml_util = XMLUtil(channel[1])
 
-                    for article in doc_list:
-                        article_title = article.find('title')
-                        article_date = article.find('pubDate')
-                        article_description = article.find('description')
                         try:
-                            doc_key = section + '-' + channel[0] + '-' + article_title.text + '-' + article_date.text
-                            self.insert_doc_id(doc_key)
-                            self.build_ii(doc_key, article_title.text, article_description.text, section)
-                        except (TypeError, AttributeError):
-                            print("No se puede indexar el artículo")
-                except FileNotFoundError:
-                    print("No se encontró el archivo XML")
-                self._ii_dict = {}
+                            doc_list = xml_util.get_document_list()
 
-    def build_ii(self, doc_key, title, description, section):
+                            for article in doc_list:
+                                article_title = article.find('title')
+                                article_date = article.find('pubDate')
+                                article_description = article.find('description')
+                                try:
+                                    doc_key = section + '-' + channel[0] + '-' + article_title.text + '-' + article_date.text
+                                    self.insert_doc_id(doc_key)
+                                    self.process_article(doc_key, article_title.text, article_description.text)
+                                except (TypeError, AttributeError):
+                                    print("No se puede indexar el artículo")
+                        except FileNotFoundError:
+                            print("No se encontró el archivo XML")
+
+                    self.write_partial_ii_to_file(writer)
+            except FileNotFoundError:
+                print("El archivo intermedio %s no existe, salteando..." % ii_part_out)
+
+    def write_partial_ii_to_file(self, writer):
+        self._ii_list = [(x, UncompressedPostings.encode(self._ii_dict[x])) for x in
+                         sorted(self._ii_dict.keys())]
+        writer.writerows(self._ii_list)
+        self._ii_dict = {}
+        self._ii_list = []
+
+    def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
         all_terms = title.split() + description.split()
         cleaned_terms = [normalizer.normalize_name(x) for x in all_terms if not normalizer.is_stop_word(normalizer.normalize_name(x))]
@@ -81,14 +94,6 @@ class Index:
             term_id = self.get_or_create_term_id(term)
             self._ii_dict.setdefault(term_id, set())
             self._ii_dict[term_id].add(self._document_dict.get(doc_key))
-
-        self._ii_list = [(x, UncompressedPostings.encode(self._ii_dict[x])) for x in sorted(self._ii_dict.keys())]
-        with open(self._output + "/" + section + "/" + section + ".ii.part", "a", newline='') as ii_part:
-            writer = csv.writer(ii_part)
-            writer.writerows(self._ii_list)
-
-        # Reset ii
-        self._ii_list = []
 
     def get_or_create_term_id(self, term):
         if term not in self._term_dict.keys():
