@@ -106,11 +106,6 @@ class Index:
                 else:
                     print("TermID: %s, Long: %s, List: %s" % (term_id, long, doc_list))
 
-        print(file_handlers)
-
-        for fh in file_handlers:
-            fh.close()
-
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
         all_terms = title.split() + description.split()
