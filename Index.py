@@ -15,6 +15,7 @@ class Index:
         self._ii_dict = {}
         self._ii_list = []
         self._output = None
+        self._block_dict = {}
 
     def get_block_dict(self):
         config = configparser.ConfigParser()
@@ -22,17 +23,15 @@ class Index:
 
         self._output = config["DEFAULT"]["output"]
 
-        block_dict = {}
+        self._block_dict = {}
 
         for section in config.sections():
-            block_dict[section] = []
+            self._block_dict[section] = []
             for option in config[section]:
                 if option not in ['url_base', 'query_interval', 'tmp', 'output', 'iterations']:
                     normalized_option = Normalizer.normalize_name(option)
                     output_xml_file = self._output + '/' + section + '/' + normalized_option + ".xml"
-                    block_dict[section].append((option, output_xml_file))
-
-        return block_dict
+                    self._block_dict[section].append((option, output_xml_file))
 
     def remove_all_parts(self):
         config = configparser.ConfigParser()
@@ -45,16 +44,15 @@ class Index:
                 print("El archivo intermedio %s no existe, salteando..." % filename)
 
     def process_blocks(self):
-        block_dict = self.get_block_dict()
+        self.get_block_dict()
         self.remove_all_parts()
 
-        for section in block_dict:
-            channel_list = block_dict[section]
+        for section in self._block_dict:
+            channel_list = self._block_dict[section]
             ii_part_out = self._output + '/' + section + "/" + section + ".ii.part"
 
             try:
                 with open(ii_part_out, "wb") as ii_part:
-                    # writer = csv.writer(ii_part)
                     for channel in channel_list:
                         xml_util = XMLUtil(channel[1])
 
@@ -78,16 +76,40 @@ class Index:
                 print("El archivo intermedio %s no existe, salteando..." % ii_part_out)
 
     def write_partial_ii_to_file(self, ii_part):
-        # self._ii_list = [(x, UncompressedPostings.encode(self._ii_dict[x])) for x in sorted(self._ii_dict.keys())]
         for x in sorted(self._ii_dict.keys()):
             y = UncompressedPostings.encode(self._ii_dict[x])
             self._ii_list.append((x, y))
-        # writer.writerows(self._ii_list)
         for row in self._ii_list:
             array_size = len(row[1])
-            ii_part.write(row[0].to_bytes(32, 'big') + array_size.to_bytes(32, 'big') + row[1])
+            ii_part.write(row[0].to_bytes(4, 'big') + array_size.to_bytes(4, 'big') + row[1])
         self._ii_dict = {}
         self._ii_list = []
+
+    def merge_blocks(self):
+        file_handlers = []
+        for section in self._block_dict.keys():
+            partial_ii_file = self._output + '/' + section + '/' + section + '.ii.part'
+            try:
+                file_handlers.append(open(partial_ii_file, 'rb'))
+            except FileNotFoundError:
+                print("El archivo intermedio %s no existe, salteando...")
+
+        while file_handlers:
+            for fh in file_handlers:
+                term_id = int.from_bytes(fh.read(4), byteorder='big')
+                long = int.from_bytes(fh.read(4), byteorder='big')
+                doc_list = UncompressedPostings.decode(fh.read(long))
+
+                if not doc_list:
+                    fh.close()
+                    file_handlers.remove(fh)
+                else:
+                    print("TermID: %s, Long: %s, List: %s" % (term_id, long, doc_list))
+
+        print(file_handlers)
+
+        for fh in file_handlers:
+            fh.close()
 
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
