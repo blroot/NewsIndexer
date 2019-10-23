@@ -2,7 +2,6 @@ import configparser
 from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
-import csv
 import os
 
 
@@ -54,8 +53,8 @@ class Index:
             ii_part_out = self._output + '/' + section + "/" + section + ".ii.part"
 
             try:
-                with open(ii_part_out, "w", newline='') as ii_part:
-                    writer = csv.writer(ii_part)
+                with open(ii_part_out, "wb") as ii_part:
+                    # writer = csv.writer(ii_part)
                     for channel in channel_list:
                         xml_util = XMLUtil(channel[1])
 
@@ -74,15 +73,19 @@ class Index:
                                     print("No se puede indexar el artículo")
                         except FileNotFoundError:
                             print("No se encontró el archivo XML")
-
-                    self.write_partial_ii_to_file(writer)
+                    self.write_partial_ii_to_file(ii_part)
             except FileNotFoundError:
                 print("El archivo intermedio %s no existe, salteando..." % ii_part_out)
 
-    def write_partial_ii_to_file(self, writer):
-        self._ii_list = [(x, UncompressedPostings.encode(self._ii_dict[x])) for x in
-                         sorted(self._ii_dict.keys())]
-        writer.writerows(self._ii_list)
+    def write_partial_ii_to_file(self, ii_part):
+        # self._ii_list = [(x, UncompressedPostings.encode(self._ii_dict[x])) for x in sorted(self._ii_dict.keys())]
+        for x in sorted(self._ii_dict.keys()):
+            y = UncompressedPostings.encode(self._ii_dict[x])
+            self._ii_list.append((x, y))
+        # writer.writerows(self._ii_list)
+        for row in self._ii_list:
+            array_size = len(row[1])
+            ii_part.write(row[0].to_bytes(32, 'big') + array_size.to_bytes(32, 'big') + row[1])
         self._ii_dict = {}
         self._ii_list = []
 
