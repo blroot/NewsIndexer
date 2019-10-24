@@ -3,6 +3,7 @@ from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
 import os
+import heapq
 
 
 class Index:
@@ -94,17 +95,28 @@ class Index:
             except FileNotFoundError:
                 print("El archivo intermedio %s no existe, salteando...")
 
+        buffer_row = []
+        heap = []
+        heapq.heapify(heap)
+        n_buffers = len(file_handlers)
+
         while file_handlers:
             for fh in file_handlers:
                 term_id = int.from_bytes(fh.read(4), byteorder='big')
                 long = int.from_bytes(fh.read(4), byteorder='big')
                 doc_list = UncompressedPostings.decode(fh.read(long))
 
+                buffer_row.append((term_id, doc_list))
+
                 if not doc_list:
                     fh.close()
                     file_handlers.remove(fh)
-                else:
-                    print("TermID: %s, Long: %s, List: %s" % (term_id, long, doc_list))
+
+            while len(heap) < n_buffers and buffer_row:
+                min_from_buffer = min(buffer_row)
+                heapq.heappush(heap, min_from_buffer)
+                buffer_row.remove(min_from_buffer)
+            print(heapq.heappop(heap))
 
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()

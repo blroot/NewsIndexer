@@ -61,7 +61,7 @@ class NewsReader:
                                 search_filter = './item[title=' + '"' + article_title.text + '"' + "]" \
                                                 + '[pubDate=' + '"' + article_date.text + '"' + ']'
 
-                                print("Searching : %s" % search_filter)
+                                # print("Searching : %s" % search_filter)
 
                                 all_items = root.findall(search_filter)
 
