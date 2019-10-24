@@ -117,8 +117,8 @@ class Index:
                 min_from_buffer = min(buffer_row)
                 heapq.heappush(heap, min_from_buffer)
                 buffer_row.remove(min_from_buffer)
-            # print(heapq.heappop(heap))
-            print(len(heap))
+            print(heapq.heappop(heap))
+            # print(len(heap))
 
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
