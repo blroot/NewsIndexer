@@ -102,21 +102,23 @@ class Index:
 
         while file_handlers:
             for fh in file_handlers:
-                term_id = int.from_bytes(fh.read(4), byteorder='big')
-                long = int.from_bytes(fh.read(4), byteorder='big')
-                doc_list = UncompressedPostings.decode(fh.read(long))
+                if len(heap) < n_buffers:
+                    term_id = int.from_bytes(fh.read(4), byteorder='big')
+                    long = int.from_bytes(fh.read(4), byteorder='big')
+                    doc_list = UncompressedPostings.decode(fh.read(long))
 
-                buffer_row.append((term_id, doc_list))
+                    buffer_row.append((term_id, doc_list))
 
-                if not doc_list:
-                    fh.close()
-                    file_handlers.remove(fh)
+                    if not doc_list:
+                        fh.close()
+                        file_handlers.remove(fh)
 
             while len(heap) < n_buffers and buffer_row:
                 min_from_buffer = min(buffer_row)
                 heapq.heappush(heap, min_from_buffer)
                 buffer_row.remove(min_from_buffer)
-            print(heapq.heappop(heap))
+            # print(heapq.heappop(heap))
+            print(len(heap))
 
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
