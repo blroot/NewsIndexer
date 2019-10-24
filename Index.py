@@ -103,6 +103,7 @@ class Index:
         with open(self._output + '/' + 'index.ii', 'w') as out:
             while file_handlers:
                 for fh in file_handlers:
+                    # Si el heap está lleno, no leo del bloque
                     if len(heap) < n_buffers:
                         term_id = int.from_bytes(fh.read(4), byteorder='big')
                         long = int.from_bytes(fh.read(4), byteorder='big')
@@ -119,7 +120,9 @@ class Index:
                     heapq.heappush(heap, min_from_buffer)
                     buffer_row.remove(min_from_buffer)
                 out.write(str(heapq.heappop(heap)) + '\n')
-                # print(len(heap))
+            # Vacío el resto del heap
+            while len(heap) != 0:
+                out.write(str(heapq.heappop(heap)) + '\n')
 
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
