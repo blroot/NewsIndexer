@@ -95,34 +95,30 @@ class Index:
             except FileNotFoundError:
                 print("El archivo intermedio %s no existe, salteando...")
 
-        buffer_row = []
         heap = []
         heapq.heapify(heap)
-        n_buffers = len(file_handlers)
+
+        # Pongo los primeros items en el heap
+        for fh in file_handlers:
+            chunk = self._get_next_chunk(fh)
+            heapq.heappush(heap, chunk)
 
         with open(self._output + '/' + 'index.ii', 'w') as out:
-            while file_handlers:
-                for fh in file_handlers:
-                    # Si el heap está lleno, no leo del bloque
-                    if len(heap) < n_buffers:
-                        term_id = int.from_bytes(fh.read(4), byteorder='big')
-                        long = int.from_bytes(fh.read(4), byteorder='big')
-                        doc_list = UncompressedPostings.decode(fh.read(long))
+            while heap:
+                minor = heapq.heappop(heap)
+                fh_reference = minor[3]
+                next_chunk = self._get_next_chunk(fh_reference)
+                if next_chunk[2]:
+                    heapq.heappush(heap, next_chunk)
+                out.write(str(minor[0]) + ',' + str(minor[2]) + '\n')
 
-                        if not doc_list:
-                            fh.close()
-                            file_handlers.remove(fh)
-                        else:
-                            buffer_row.append((term_id, doc_list))
+    @staticmethod
+    def _get_next_chunk(fh):
+        term_id = int.from_bytes(fh.read(4), byteorder='big')
+        size = int.from_bytes(fh.read(4), byteorder='big')
+        doc_list = UncompressedPostings.decode(fh.read(size))
 
-                while len(heap) < n_buffers and buffer_row:
-                    min_from_buffer = min(buffer_row)
-                    heapq.heappush(heap, min_from_buffer)
-                    buffer_row.remove(min_from_buffer)
-                out.write(str(heapq.heappop(heap)) + '\n')
-            # Vacío el resto del heap
-            while len(heap) != 0:
-                out.write(str(heapq.heappop(heap)) + '\n')
+        return term_id, size, doc_list, fh
 
     def process_article(self, doc_key, title, description):
         normalizer = Normalizer()
