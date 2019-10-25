@@ -104,13 +104,23 @@ class Index:
             heapq.heappush(heap, chunk)
 
         with open(self._output + '/' + 'index.ii', 'w') as out:
+            previous_term_id = None
             while heap:
                 minor = heapq.heappop(heap)
                 fh_reference = minor[3]
                 next_chunk = self._get_next_chunk(fh_reference)
+
                 if next_chunk[2]:
                     heapq.heappush(heap, next_chunk)
-                out.write(str(minor[0]) + ',' + str(minor[2]) + '\n')
+
+                actual_term_id = minor[0]
+
+                if actual_term_id == previous_term_id:
+                    out.write(',' + str(minor[2]))
+                else:
+                    out.write('\n' + str(minor[0]) + ',' + str(minor[2]))
+
+                previous_term_id = minor[0]
 
     @staticmethod
     def _get_next_chunk(fh):
