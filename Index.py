@@ -2,6 +2,7 @@ import configparser
 from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
+from IndexDictionary import IndexDictionary
 import os
 import heapq
 
@@ -17,6 +18,7 @@ class Index:
         self._ii_list = []
         self._output = None
         self._block_dict = {}
+        self._dictionary_index = IndexDictionary()
 
     def get_block_dict(self):
         config = configparser.ConfigParser()
@@ -103,8 +105,11 @@ class Index:
             chunk = self._get_next_chunk(fh)
             heapq.heappush(heap, chunk)
 
-        with open(self._output + '/' + 'index.ii', 'w') as out:
+        with open(self._output + '/' + 'index.ii', 'wb') as out:
             previous_term_id = None
+            offset = 0
+            total_size = 0
+            doc_list = b''
             while heap:
                 minor = heapq.heappop(heap)
                 fh_reference = minor[3]
@@ -114,11 +119,21 @@ class Index:
                     heapq.heappush(heap, next_chunk)
 
                 actual_term_id = minor[0]
+                actual_doc_list = minor[2]
+                size = minor[1]
 
+                # Si el termID es igual al anterior acumulo doc_list y tamaño
                 if actual_term_id == previous_term_id:
-                    out.write(',' + str(minor[2]))
+                    doc_list += actual_doc_list
+                    total_size += size
+                # Sino, inserto en el diccionario el termID con los acumulados
                 else:
-                    out.write('\n' + str(minor[0]) + ',' + str(minor[2]))
+                    if previous_term_id is not None:
+                        self._dictionary_index.insert(previous_term_id, (offset, int(total_size/4), total_size))
+                        offset += total_size
+                        out.write(doc_list)
+                        doc_list = actual_doc_list
+                        total_size = size
 
                 previous_term_id = minor[0]
 
@@ -126,7 +141,7 @@ class Index:
     def _get_next_chunk(fh):
         term_id = int.from_bytes(fh.read(4), byteorder='big')
         size = int.from_bytes(fh.read(4), byteorder='big')
-        doc_list = UncompressedPostings.decode(fh.read(size))
+        doc_list = fh.read(size)
 
         return term_id, size, doc_list, fh
 
