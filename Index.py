@@ -69,7 +69,7 @@ class Index:
                                 try:
                                     doc_key = section + '-' + channel[0] + '-' + article_title.text + '-' + article_date.text
                                     self.insert_doc_id(doc_key)
-                                    self.process_article(doc_key, article_title.text, article_description.text)
+                                    self.process_article(doc_key, article)
                                 except (TypeError, AttributeError):
                                     print("No se puede indexar el artículo")
                         except FileNotFoundError:
@@ -145,9 +145,14 @@ class Index:
 
         return term_id, size, doc_list, fh
 
-    def process_article(self, doc_key, title, description):
+    def process_article(self, doc_key, article):
         normalizer = Normalizer()
-        all_terms = title.split() + description.split()
+        all_terms = []
+        for i in article.findall('*'):
+            if i.text is not None:
+                for y in i.text.split():
+                    all_terms.append(y)
+
         cleaned_terms = [normalizer.normalize_name(x) for x in all_terms if not normalizer.is_stop_word(normalizer.normalize_name(x))]
         for term in cleaned_terms:
             term_id = self.get_or_create_term_id(term)
