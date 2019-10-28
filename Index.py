@@ -3,6 +3,7 @@ from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
 from IndexDictionary import IndexDictionary
+from bs4 import BeautifulSoup
 import os
 import heapq
 
@@ -65,7 +66,6 @@ class Index:
                             for article in doc_list:
                                 article_title = article.find('title')
                                 article_date = article.find('pubDate')
-                                article_description = article.find('description')
                                 try:
                                     doc_key = section + '-' + channel[0] + '-' + article_title.text + '-' + article_date.text
                                     self.insert_doc_id(doc_key)
@@ -149,11 +149,20 @@ class Index:
         normalizer = Normalizer()
         all_terms = []
         for i in article.findall('*'):
+            if 'encoded' in i.tag:
+                i = BeautifulSoup(i.text, "lxml")
+
             if i.text is not None:
                 for y in i.text.split():
                     all_terms.append(y)
 
-        cleaned_terms = [normalizer.normalize_name(x) for x in all_terms if not normalizer.is_stop_word(normalizer.normalize_name(x))]
+        # cleaned_terms = [normalizer.normalize_name(x) for x in all_terms if not normalizer.is_stop_word(normalizer.normalize_name(x))]
+        cleaned_terms = []
+        for i in all_terms:
+            normalized = normalizer.normalize_name(i)
+            if not normalizer.is_stop_word(normalized):
+                cleaned_terms.append(normalized)
+
         for term in cleaned_terms:
             term_id = self.get_or_create_term_id(term)
             self._ii_dict.setdefault(term_id, set())

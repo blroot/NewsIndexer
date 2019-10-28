@@ -53,7 +53,7 @@ class Normalizer:
                         "ú": "u", ",": "", ".": "", ":": "", ";": "",
                         "?": "", "¿": "", "!": "", "¡": "", "«": "",
                         "»": "", '"': "", "(": "", ")": "", "[": "",
-                        "]": "", " ": "-", "#": "", "<p>": "", "</p>": ""}
+                        "]": "", "#": ""}
         for char in name:
             if char in replace_dict.keys():
                 name = name.replace(char, replace_dict.get(char))
