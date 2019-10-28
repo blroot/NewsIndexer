@@ -2,6 +2,20 @@ import array
 
 
 class UncompressedPostings:
+    def __init__(self, file_name):
+        self._file_name = file_name
+        self._fh = open(self._file_name, 'rb')
+
+    def close_postings_file(self):
+        self._fh.close()
+
+    def retrieve_postings_list(self, offset, size):
+        return self.decode(self._retrieve_chunk(offset, size))
+
+    def _retrieve_chunk(self, offset, size):
+        self._fh.seek(offset)
+        return self._fh.read(size)
+
     @staticmethod
     def encode(postings_list):
         return array.array('L', postings_list).tobytes()

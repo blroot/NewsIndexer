@@ -2,10 +2,10 @@ import configparser
 from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
-from IndexDictionary import IndexDictionary
 from bs4 import BeautifulSoup
 import os
 import heapq
+import pickle
 
 
 class Index:
@@ -19,7 +19,7 @@ class Index:
         self._ii_list = []
         self._output = None
         self._block_dict = {}
-        self._dictionary_index = IndexDictionary()
+        self._dictionary_index = {}
 
     def get_block_dict(self):
         config = configparser.ConfigParser()
@@ -129,13 +129,20 @@ class Index:
                 # Sino, inserto en el diccionario el termID con los acumulados
                 else:
                     if previous_term_id is not None:
-                        self._dictionary_index.insert(previous_term_id, (offset, int(total_size/4), total_size))
+                        self._dictionary_index[previous_term_id] = (offset, int(total_size/4), total_size)
                         offset += total_size
                         out.write(doc_list)
                         doc_list = actual_doc_list
                         total_size = size
 
                 previous_term_id = minor[0]
+
+        self.persist_ii()
+
+    def persist_ii(self):
+        pickle.dump(self._term_dict, open(self._output + '/' + 'term.dict', 'wb'))
+        pickle.dump(self._document_dict, open(self._output + '/' + 'document.dict', 'wb'))
+        pickle.dump(self._dictionary_index, open(self._output + '/' + 'ii.dict', 'wb'))
 
     @staticmethod
     def _get_next_chunk(fh):
@@ -156,7 +163,6 @@ class Index:
                 for y in i.text.split():
                     all_terms.append(y)
 
-        # cleaned_terms = [normalizer.normalize_name(x) for x in all_terms if not normalizer.is_stop_word(normalizer.normalize_name(x))]
         cleaned_terms = []
         for i in all_terms:
             normalized = normalizer.normalize_name(i)
