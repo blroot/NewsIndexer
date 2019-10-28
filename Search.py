@@ -1,13 +1,10 @@
-import configparser
 import pickle
 from UncompressedPostings import UncompressedPostings
 
 
 class Search:
-    def __init__(self, config_file):
-        config = configparser.ConfigParser()
-        config.read(config_file, encoding='utf-8')
-        self._output = config["DEFAULT"]["output"]
+    def __init__(self, output_path):
+        self._output = output_path
 
     def search_in_ii(self, terms):
         term_dict = pickle.load(open(self._output + '/' + 'term.dict', 'rb'))
