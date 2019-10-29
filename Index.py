@@ -1,4 +1,3 @@
-import configparser
 from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
@@ -9,8 +8,8 @@ import pickle
 
 
 class Index:
-    def __init__(self, config_file, document_dict={}, term_dict={}):
-        self.config_file = config_file
+    def __init__(self, config, document_dict={}, term_dict={}, callback=None):
+        self._config = config
         self._document_dict = document_dict
         self._term_dict = term_dict
         self._document_dict_next_id = 0
@@ -20,36 +19,33 @@ class Index:
         self._output = None
         self._block_dict = {}
         self._dictionary_index = {}
+        self._callback = callback
 
-    def get_block_dict(self):
-        config = configparser.ConfigParser()
-        config.read(self.config_file, encoding='utf-8')
-
-        self._output = config["DEFAULT"]["output"]
+    def _get_block_dict(self):
+        self._output = self._config["DEFAULT"]["output"]
 
         self._block_dict = {}
 
-        for section in config.sections():
+        for section in self._config.sections():
             self._block_dict[section] = []
-            for option in config[section]:
+            for option in self._config[section]:
                 if option not in ['url_base', 'query_interval', 'tmp', 'output', 'iterations']:
                     normalized_option = Normalizer.normalize_name(option)
                     output_xml_file = self._output + '/' + section + '/' + normalized_option + ".xml"
                     self._block_dict[section].append((option, output_xml_file))
 
-    def remove_all_parts(self):
-        config = configparser.ConfigParser()
-        config.read(self.config_file, encoding='utf-8')
-        for section in config.sections():
+    def _remove_all_parts(self):
+        for section in self._config.sections():
             filename = self._output + '/' + section + "/" + section + ".ii.part"
             try:
                 os.remove(filename)
             except FileNotFoundError:
-                print("El archivo intermedio %s no existe, salteando..." % filename)
+                if self._callback:
+                    self._callback("BLKNE", filename)
 
     def process_blocks(self):
-        self.get_block_dict()
-        self.remove_all_parts()
+        self._get_block_dict()
+        self._remove_all_parts()
 
         for section in self._block_dict:
             channel_list = self._block_dict[section]
@@ -68,17 +64,20 @@ class Index:
                                 article_date = article.find('pubDate')
                                 try:
                                     doc_key = section + '-' + channel[0] + '-' + article_title.text + '-' + article_date.text
-                                    self.insert_doc_id(doc_key)
-                                    self.process_article(doc_key, article)
+                                    self._insert_doc_id(doc_key)
+                                    self._process_article(doc_key, article)
                                 except (TypeError, AttributeError):
-                                    print("No se puede indexar el artículo")
+                                    if self._callback:
+                                        self._callback("INDERR", article_title.text)
                         except FileNotFoundError:
-                            print("No se encontró el archivo XML")
-                    self.write_partial_ii_to_file(ii_part)
+                            if self._callback:
+                                self._callback("XMLNF", channel[1])
+                    self._write_partial_ii_to_file(ii_part)
             except FileNotFoundError:
-                print("El archivo intermedio %s no existe, salteando..." % ii_part_out)
+                if self._callback:
+                    self._callback("BLKNE", ii_part_out)
 
-    def write_partial_ii_to_file(self, ii_part):
+    def _write_partial_ii_to_file(self, ii_part):
         for x in sorted(self._ii_dict.keys()):
             y = UncompressedPostings.encode(self._ii_dict[x])
             self._ii_list.append((x, y))
@@ -95,7 +94,8 @@ class Index:
             try:
                 file_handlers.append(open(partial_ii_file, 'rb'))
             except FileNotFoundError:
-                print("El archivo intermedio %s no existe, salteando...")
+                if self._callback:
+                    self._callback("BLKNE", partial_ii_file)
 
         heap = []
         heapq.heapify(heap)
@@ -137,9 +137,9 @@ class Index:
 
                 previous_term_id = minor[0]
 
-        self.persist_ii()
+        self._persist_ii()
 
-    def persist_ii(self):
+    def _persist_ii(self):
         pickle.dump(self._term_dict, open(self._output + '/' + 'term.dict', 'wb'))
         pickle.dump(self._document_dict, open(self._output + '/' + 'document.dict', 'wb'))
         pickle.dump(self._dictionary_index, open(self._output + '/' + 'ii.dict', 'wb'))
@@ -152,7 +152,7 @@ class Index:
 
         return term_id, size, doc_list, fh
 
-    def process_article(self, doc_key, article):
+    def _process_article(self, doc_key, article):
         normalizer = Normalizer()
         all_terms = []
         for i in article.findall('*'):
@@ -170,11 +170,11 @@ class Index:
                 cleaned_terms.append(normalized)
 
         for term in cleaned_terms:
-            term_id = self.get_or_create_term_id(term)
+            term_id = self._get_or_create_term_id(term)
             self._ii_dict.setdefault(term_id, set())
             self._ii_dict[term_id].add(self._document_dict.get(doc_key))
 
-    def get_or_create_term_id(self, term):
+    def _get_or_create_term_id(self, term):
         if term not in self._term_dict.keys():
             doc_id = self._term_dict_next_id
             self._term_dict[term] = doc_id
@@ -184,6 +184,6 @@ class Index:
 
         return doc_id
 
-    def insert_doc_id(self, doc_key):
+    def _insert_doc_id(self, doc_key):
         self._document_dict[doc_key] = self._document_dict_next_id
         self._document_dict_next_id += 1

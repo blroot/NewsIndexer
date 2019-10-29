@@ -1,4 +1,3 @@
-import configparser
 import xml.etree.ElementTree as ET
 import requests
 import time
@@ -7,36 +6,35 @@ from Normalizer import Normalizer
 
 
 class NewsReader:
-    def __init__(self, config_file):
-        self.config_file = config_file
+    def __init__(self, config, callback=None):
+        self.config = config
         self.output = None
+        self._callback = callback
 
     def collect_news(self):
-        config = configparser.ConfigParser()
-        config.read(self.config_file, encoding='utf-8')
-
-        self.output = config["DEFAULT"]["output"]
-        query_interval = int(config["DEFAULT"]["query_interval"])
-        iterations = int(config["DEFAULT"]["iterations"])
+        self.output = self.config["DEFAULT"]["output"]
+        query_interval = int(self.config["DEFAULT"]["query_interval"])
+        iterations = int(self.config["DEFAULT"]["iterations"])
         iterations_counter = 0
 
         while iterations_counter <= iterations:
-            for section in config.sections():
-                for option in config[section]:
-                    url_base = config[section]['url_base']
+            for section in self.config.sections():
+                for option in self.config[section]:
+                    url_base = self.config[section]['url_base']
 
                     if option not in ['url_base', 'query_interval', 'tmp', 'output', 'iterations']:
-                        print("Downloading from url: %s" % url_base + config[section][option])
-
+                        path = url_base + self.config[section][option]
                         try:
-                            xml_data = requests.get(url_base + config[section][option])
+                            xml_data = requests.get(path)
                         except requests.exceptions.ChunkedEncodingError:
-                            print("No se pudo descargar el XML")
+                            if self._callback:
+                                self._callback("DLERR", path)
                             continue
                         try:
                             tree = ET.ElementTree(ET.fromstring(xml_data.content))
                         except ET.ParseError:
-                            print("No se pudo parsear el XML")
+                            if self._callback:
+                                self._callback("PARSEERR", path)
                             continue
 
                         root = tree.getroot()
@@ -61,19 +59,21 @@ class NewsReader:
                                 search_filter = './item[title=' + '"' + article_title.text + '"' + "]" \
                                                 + '[pubDate=' + '"' + article_date.text + '"' + ']'
 
-                                # print("Searching : %s" % search_filter)
-
                                 all_items = root.findall(search_filter)
 
                                 if len(all_items) == 0:
-                                    print("Saving new article -> Title: %s, Date: %s"
-                                          % (article_title.text, article_date.text))
+                                    if self._callback:
+                                        self._callback("NEWARTICLE", section, option, article_title.text)
                                     root.append(article)
                             except AttributeError:
-                                print("Mal formato de título o fecha")
+                                if self._callback:
+                                    self._callback("BADFORMAT")
 
                         tree_output.write(output_xml_file)
 
+            if self._callback:
+                self._callback("WAITING", query_interval)
+                self._callback("CANINTERR")
             time.sleep(query_interval)
             iterations_counter += 1
 
