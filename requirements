@@ -2,3 +2,5 @@ configparser
 requests
 beautifulsoup4
 lxml
+pystemmer
+BTrees

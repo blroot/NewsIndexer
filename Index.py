@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import os
 import heapq
 import pickle
+import Stemmer
 
 
 class Index:
@@ -20,6 +21,7 @@ class Index:
         self._block_dict = {}
         self._dictionary_index = {}
         self._callback = callback
+        self._stemmer = Stemmer.Stemmer('spanish')
 
     def _get_block_dict(self):
         self._output = self._config["DEFAULT"]["output"]
@@ -171,7 +173,8 @@ class Index:
                 cleaned_terms.append(normalized)
 
         for term in cleaned_terms:
-            term_id = self._get_or_create_term_id(term)
+            stemmed_term = self._stemmer.stemWord(term)
+            term_id = self._get_or_create_term_id(stemmed_term)
             self._ii_dict.setdefault(term_id, set())
             self._ii_dict[term_id].add(self._document_dict.get(doc_key))
 
