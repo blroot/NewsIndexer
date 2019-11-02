@@ -156,8 +156,9 @@ class Index:
         normalizer = Normalizer()
         all_terms = []
         for i in article.findall('*'):
-            if 'encoded' in i.tag:
-                i = BeautifulSoup(i.text, "lxml")
+            if 'encoded' in i.tag or 'description' in i.tag:
+                if i.text:
+                    i = BeautifulSoup(i.text, "lxml")
 
             if i.text is not None:
                 for y in i.text.split():
@@ -166,7 +167,7 @@ class Index:
         cleaned_terms = []
         for i in all_terms:
             normalized = normalizer.normalize_name(i)
-            if not normalizer.is_stop_word(normalized):
+            if not normalizer.is_stop_word(normalized) and not normalizer.is_link(normalized):
                 cleaned_terms.append(normalized)
 
         for term in cleaned_terms:

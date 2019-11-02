@@ -48,6 +48,10 @@ class Normalizer:
         return word in self.STOP_WORDS
 
     @staticmethod
+    def is_link(word):
+        return 'http//' in word or 'https//' in word
+
+    @staticmethod
     def normalize_name(name):
         replace_dict = {"&quot;": "", "á": "a", "é": "e", "í": "i", "ó": "o",
                         "ú": "u", ",": "", ".": "", ":": "", ";": "",
