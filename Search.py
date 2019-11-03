@@ -25,6 +25,7 @@ class Search:
 
         self.reverse_btree()
 
+        # Ya no se necesita esto
         ii_dict = None
         term_dict = None
         document_dict = None
@@ -34,17 +35,6 @@ class Search:
         postings = UncompressedPostings(self._output + '/' + 'index.ii')
 
         for term in terms:
-            """
-            term_id = term_dict.get(term, None)
-            metadata = ii_dict.get(term_id, None)
-
-            if term_id and metadata:
-                postings_list = postings.retrieve_postings_list(metadata[0], metadata[1]*4)
-                results[term] = [id_to_document_list.get(x) for x in postings_list]
-            else:
-                results[term] = None
-            """
-
             metadata_list = self.wildcard_search(term)
             postings_list = []
             if metadata_list:
@@ -65,10 +55,14 @@ class Search:
     def wildcard_search(self, word):
         if word.find("*") == -1:
             # No wildcard
-            return list(self._btree.values(min=word, max=word))
+            try:
+                return list([self._btree[word]])
+            except KeyError:
+                return None
         elif word[-1] == "*":
             return list(self._btree.values(min=word[:-1]+self._alphabet[0], max=word[:-1]+self._alphabet[26]))
         elif word[0] == "*":
+            print("Desde %s hasta %s" % (word[::-1][:-1]+self._alphabet[0], word[::-1][:-1]+self._alphabet[26]))
             return list(self._reverse_btree.values(
                 min=word[::-1][:-1]+self._alphabet[0], max=word[::-1][:-1]+self._alphabet[26])
             )
