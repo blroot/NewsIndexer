@@ -30,7 +30,6 @@ class ConsoleApp:
         index = Index(self._config, callback=self.print_callback)
         index.process_blocks()
         index.merge_blocks()
-        print("Construcción del índice invertido finalizada")
 
     def search(self):
         output = self._config["DEFAULT"]["output"]
@@ -61,7 +60,8 @@ class ConsoleApp:
             "CANINTERR": "Si lo desea presione CTRL+C para cancelar y volver al menú principal",
             "BLKNE": "El archivo intermedio %s no existe, salteando...",
             "INDERR": "No se puede indexar el artículo con título %s",
-            "XMLNF": "No existe el archivo XML %s"
+            "XMLNF": "No existe el archivo XML %s",
+            "MERGEOK": "Construcción del índice invertido finalizada"
         }
         print(messages.get(message) % args)
 

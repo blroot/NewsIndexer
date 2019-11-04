@@ -42,8 +42,7 @@ class Index:
             try:
                 os.remove(filename)
             except FileNotFoundError:
-                if self._callback:
-                    self._callback("BLKNE", filename)
+                self.do_callback("BLKNE", filename)
 
     def process_blocks(self):
         self._get_block_dict()
@@ -69,15 +68,12 @@ class Index:
                                     self._insert_doc_id(doc_key)
                                     self._process_article(doc_key, article)
                                 except (TypeError, AttributeError):
-                                    if self._callback:
-                                        self._callback("INDERR", article_title.text)
+                                    self.do_callback("INDERR", article_title.text)
                         except FileNotFoundError:
-                            if self._callback:
-                                self._callback("XMLNF", channel[1])
+                            self.do_callback("XMLNF", channel[1])
                     self._write_partial_ii_to_file(ii_part)
             except FileNotFoundError:
-                if self._callback:
-                    self._callback("BLKNE", ii_part_out)
+                self.do_callback("BLKNE", ii_part_out)
 
     def _write_partial_ii_to_file(self, ii_part):
         for x in sorted(self._ii_dict.keys()):
@@ -96,8 +92,7 @@ class Index:
             try:
                 file_handlers.append(open(partial_ii_file, 'rb'))
             except FileNotFoundError:
-                if self._callback:
-                    self._callback("BLKNE", partial_ii_file)
+                self.do_callback("BLKNE", partial_ii_file)
 
         heap = []
         heapq.heapify(heap)
@@ -140,6 +135,11 @@ class Index:
                 previous_term_id = minor[0]
 
         self._persist_ii()
+        self.do_callback(message)
+
+    def do_callback(self, message, *args):
+        if self._callback:
+            self._callback(message, *args)
 
     def _persist_ii(self):
         pickle.dump(self._term_dict, open(self._output + '/' + 'term.dict', 'wb'))

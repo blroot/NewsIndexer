@@ -1,6 +1,7 @@
 import pickle
 from UncompressedPostings import UncompressedPostings
 from BTrees.OOBTree import OOBTree
+import Stemmer
 
 
 class Search:
@@ -56,7 +57,9 @@ class Search:
         if word.find("*") == -1:
             # No wildcard
             try:
-                return list([self._btree[word]])
+                stemmer = Stemmer.Stemmer('spanish')
+                stemmed_word = stemmer.stemWord()
+                return list([self._btree[stemmed_word]])
             except KeyError:
                 return None
         elif word[-1] == "*":
