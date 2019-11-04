@@ -135,6 +135,7 @@ class Index:
                 previous_term_id = minor[0]
 
         self._persist_ii()
+        self._remove_all_parts()
         self.do_callback(message)
 
     def do_callback(self, message, *args):
