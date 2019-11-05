@@ -58,7 +58,7 @@ class Search:
             # No wildcard
             try:
                 stemmer = Stemmer.Stemmer('spanish')
-                stemmed_word = stemmer.stemWord()
+                stemmed_word = stemmer.stemWord(word)
                 return list([self._btree[stemmed_word]])
             except KeyError:
                 return None
