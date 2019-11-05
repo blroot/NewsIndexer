@@ -14,9 +14,8 @@ class ConsoleApp:
             1: self.collect_news,
             2: self.build_ii,
             3: None,
-            4: None,
-            5: self.search,
-            6: exit
+            4: self.search,
+            5: exit
         }
 
     def collect_news(self):
@@ -28,27 +27,33 @@ class ConsoleApp:
             self.display_menu()
 
     def build_ii(self):
+        start = time.time()
         index = Index(self._config, callback=self.print_callback)
         index.process_blocks()
         index.merge_blocks()
+        end = time.time()
+        print("La construcción del índice demoró %s segundos" % (end - start))
 
     def search(self):
         output = self._config["DEFAULT"]["output"]
         print("Ingrese las palabras a buscar, separadas por blancos para búsqueda múltiple")
         terms = str(input()).split()
         start = time.time()
-        search = Search(output)
-        results = search.search_in_ii(terms)
+        try:
+            search = Search(output)
+            results = search.search_in_ii(terms)
 
-        for term, docs in results.items():
-            print("---- Resultados de la búsqueda por término %s ----" % term)
-            if docs is not None:
-                for doc in docs:
-                    print(doc)
-            else:
-                print("No se encontraron resultados.")
-        end = time.time()
-        print("La búsqueda demoró %s" % (end - start))
+            for term, docs in results.items():
+                print("---- Resultados de la búsqueda por término %s ----" % term)
+                if docs is not None:
+                    for doc in docs:
+                        print(doc)
+                else:
+                    print("No se encontraron resultados.")
+            end = time.time()
+            print("La búsqueda demoró %s segundos" % (end - start))
+        except FileNotFoundError:
+            print("No se encontró en disco el índice invertido, debe generarlo con la opción 2")
 
     @staticmethod
     def print_callback(message, *args):
@@ -73,10 +78,9 @@ class ConsoleApp:
         print("Bienvenido.... Por favor, seleccione una opción")
         print("1 - Recolectar Noticias")
         print("2 - Construír índice invertido")
-        print("3 - Recuperar índice invertido desde disco")
-        print("4 - Comprimir lista de apariciones")
-        print("5 - Buscar")
-        print("6 - Salir")
+        print("3 - Comprimir lista de apariciones")
+        print("4 - Buscar")
+        print("5 - Salir")
 
         try:
             option = int(input("Seleccione una opción [1-5]: "))
