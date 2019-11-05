@@ -136,7 +136,7 @@ class Index:
 
         self._persist_ii()
         self._remove_all_parts()
-        self.do_callback(message)
+        self.do_callback("MERGEOK")
 
     def do_callback(self, message, *args):
         if self._callback:
