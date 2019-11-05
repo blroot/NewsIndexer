@@ -2,6 +2,7 @@ from NewsReader import NewsReader
 from Index import Index
 from Search import Search
 import configparser
+import time
 
 
 class ConsoleApp:
@@ -35,6 +36,7 @@ class ConsoleApp:
         output = self._config["DEFAULT"]["output"]
         print("Ingrese las palabras a buscar, separadas por blancos para búsqueda múltiple")
         terms = str(input()).split()
+        start = time.time()
         search = Search(output)
         results = search.search_in_ii(terms)
 
@@ -45,6 +47,8 @@ class ConsoleApp:
                     print(doc)
             else:
                 print("No se encontraron resultados.")
+        end = time.time()
+        print("La búsqueda demoró %s" % (end - start))
 
     @staticmethod
     def print_callback(message, *args):
