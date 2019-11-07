@@ -1,2 +1,6 @@
 salida/**
 /tests/TELAM/**
+/tests/document.dict
+/tests/ii.dict
+/tests/index.ii
+/tests/term.dict

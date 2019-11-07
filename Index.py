@@ -169,8 +169,8 @@ class Index:
 
         cleaned_terms = []
         for i in all_terms:
-            normalized = normalizer.normalize_name(i)
-            if not normalizer.is_stop_word(normalized) and not normalizer.is_link(normalized):
+            normalized = normalizer.normalize_name(i).strip()
+            if not len(normalized) < 3 and not normalizer.is_stop_word(normalized) and not normalizer.is_link(normalized):
                 cleaned_terms.append(normalized)
 
         for term in cleaned_terms:
