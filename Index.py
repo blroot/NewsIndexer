@@ -46,7 +46,6 @@ class Index:
 
     def process_blocks(self):
         self._get_block_dict()
-        self._remove_all_parts()
 
         for section in self._block_dict:
             channel_list = self._block_dict[section]

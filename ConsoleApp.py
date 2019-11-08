@@ -13,10 +13,13 @@ class ConsoleApp:
         self.menu_options = {
             1: self.collect_news,
             2: self.build_ii,
-            3: None,
+            3: self.compress_ii,
             4: self.search,
             5: exit
         }
+
+    def compress_ii(self):
+        print("No implementado.")
 
     def collect_news(self):
         try:
