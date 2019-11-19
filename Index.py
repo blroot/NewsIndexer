@@ -135,7 +135,8 @@ class Index:
         postings.close_postings_file()
         self._persist_ii()
         self._remove_all_parts()
-        os.remove(self._output + '/' + 'index.cii')
+        if os.path.isfile(self._output + '/' + 'index.cii'):
+            os.remove(self._output + '/' + 'index.cii')
         self.do_callback("MERGEOK")
 
     def do_callback(self, message, *args):

@@ -57,7 +57,7 @@ class ConsoleApp:
                         print(doc)
                     print("Resultados: %s" % len(docs))
                 else:
-                    print("No se en kk.k.contraron resultados.")
+                    print("No se encontraron resultados.")
             end = time.time()
             print("La búsqueda demoró %s segundos" % (end - start))
         except FileNotFoundError:
