@@ -51,12 +51,13 @@ class ConsoleApp:
             results = search.search_in_ii(terms)
 
             for term, docs in results.items():
-                print("---- Resultados de la búsqueda %s %s resultados ----" % (term, len(docs)))
+                print("---- Resultados de la búsqueda %s ----" % term)
                 if docs is not None:
                     for doc in docs:
                         print(doc)
                 else:
                     print("No se en kk.k.contraron resultados.")
+                print("Resultados: %s" % len(docs))
             end = time.time()
             print("La búsqueda demoró %s segundos" % (end - start))
         except FileNotFoundError:
