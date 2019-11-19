@@ -19,7 +19,11 @@ class ConsoleApp:
         }
 
     def compress_ii(self):
-        print("No implementado.")
+        start = time.time()
+        index = Index(self._config, callback=self.print_callback)
+        index.compress()
+        end = time.time()
+        print("La compresión demoró %s segundos" % (end - start))
 
     def collect_news(self):
         try:
@@ -47,12 +51,12 @@ class ConsoleApp:
             results = search.search_in_ii(terms)
 
             for term, docs in results.items():
-                print("---- Resultados de la búsqueda por término %s ----" % term)
+                print("---- Resultados de la búsqueda %s %s resultados ----" % (term, len(docs)))
                 if docs is not None:
                     for doc in docs:
                         print(doc)
                 else:
-                    print("No se encontraron resultados.")
+                    print("No se en kk.k.contraron resultados.")
             end = time.time()
             print("La búsqueda demoró %s segundos" % (end - start))
         except FileNotFoundError:
@@ -73,7 +77,8 @@ class ConsoleApp:
             "BLKNE": "El archivo intermedio %s no existe, salteando...",
             "INDERR": "No se puede indexar el artículo con título %s",
             "XMLNF": "No existe el archivo XML %s",
-            "MERGEOK": "Construcción del índice invertido finalizada"
+            "MERGEOK": "Construcción del índice invertido finalizada",
+            "IINF": "No existe un índice invertido no comprimido en el sistema"
         }
         print(messages.get(message) % args)
 

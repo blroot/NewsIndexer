@@ -1,5 +1,6 @@
 import pickle
 from UncompressedPostings import UncompressedPostings
+from CompressedPostings import CompressedPostings
 from BTrees.OOBTree import OOBTree
 import Stemmer
 
@@ -33,14 +34,17 @@ class Search:
 
         results = {}
 
-        postings = UncompressedPostings(self._output + '/' + 'index.ii')
+        try:
+            postings = CompressedPostings(self._output + '/' + 'index.cii')
+        except FileNotFoundError:
+            postings = UncompressedPostings(self._output + '/' + 'index.ii')
 
         for term in terms:
             metadata_list = self.wildcard_search(term)
             postings_list = []
             if metadata_list:
                 for metadata in metadata_list:
-                    postings_list += postings.retrieve_postings_list(metadata[0], metadata[1]*4)
+                    postings_list += postings.retrieve_postings_list(metadata[0], metadata[2])
                 results[term] = [id_to_document_list.get(x) for x in postings_list]
             else:
                 results[term] = None

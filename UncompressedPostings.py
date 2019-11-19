@@ -2,9 +2,12 @@ import array
 
 
 class UncompressedPostings:
-    def __init__(self, file_name):
+    def __init__(self, file_name, mode='rb'):
         self._file_name = file_name
-        self._fh = open(self._file_name, 'rb')
+        self._fh = open(self._file_name, mode)
+
+    def write(self, data):
+        self._fh.write(data)
 
     def close_postings_file(self):
         self._fh.close()

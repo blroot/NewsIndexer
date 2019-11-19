@@ -1,6 +1,7 @@
 from Normalizer import Normalizer
 from XMLUtil import XMLUtil
 from UncompressedPostings import UncompressedPostings
+from CompressedPostings import CompressedPostings
 from bs4 import BeautifulSoup
 import os
 import heapq
@@ -17,15 +18,13 @@ class Index:
         self._term_dict_next_id = 0
         self._ii_dict = {}
         self._ii_list = []
-        self._output = None
+        self._output = self._config["DEFAULT"]["output"]
         self._block_dict = {}
         self._dictionary_index = {}
         self._callback = callback
         self._stemmer = Stemmer.Stemmer('spanish')
 
     def _get_block_dict(self):
-        self._output = self._config["DEFAULT"]["output"]
-
         self._block_dict = {}
 
         for section in self._config.sections():
@@ -101,40 +100,42 @@ class Index:
             chunk = self._get_next_chunk(fh)
             heapq.heappush(heap, chunk)
 
-        with open(self._output + '/' + 'index.ii', 'wb') as out:
-            previous_term_id = None
-            offset = 0
-            total_size = 0
-            doc_list = b''
-            while heap:
-                minor = heapq.heappop(heap)
-                fh_reference = minor[3]
-                next_chunk = self._get_next_chunk(fh_reference)
+        postings = UncompressedPostings(self._output + '/' + 'index.ii', mode='wb+')
+        previous_term_id = None
+        offset = 0
+        total_size = 0
+        doc_list = b''
+        while heap:
+            minor = heapq.heappop(heap)
+            fh_reference = minor[3]
+            next_chunk = self._get_next_chunk(fh_reference)
 
-                if next_chunk[2]:
-                    heapq.heappush(heap, next_chunk)
+            if next_chunk[2]:
+                heapq.heappush(heap, next_chunk)
 
-                actual_term_id = minor[0]
-                actual_doc_list = minor[2]
-                size = minor[1]
+            actual_term_id = minor[0]
+            actual_doc_list = minor[2]
+            size = minor[1]
 
-                # Si el termID es igual al anterior acumulo doc_list y tamaño
-                if actual_term_id == previous_term_id:
-                    doc_list += actual_doc_list
-                    total_size += size
-                # Sino, inserto en el diccionario el termID con los acumulados
-                else:
-                    if previous_term_id is not None:
-                        self._dictionary_index[previous_term_id] = (offset, int(total_size/4), total_size)
-                        offset += total_size
-                        out.write(doc_list)
-                        doc_list = actual_doc_list
-                        total_size = size
+            # Si el termID es igual al anterior acumulo doc_list y tamaño
+            if actual_term_id == previous_term_id:
+                doc_list += actual_doc_list
+                total_size += size
+            # Sino, inserto en el diccionario el termID con los acumulados
+            else:
+                if previous_term_id is not None:
+                    self._dictionary_index[previous_term_id] = (offset, int(total_size/4), total_size)
+                    offset += total_size
+                    postings.write(doc_list)
+                    doc_list = actual_doc_list
+                    total_size = size
 
-                previous_term_id = minor[0]
+            previous_term_id = minor[0]
 
+        postings.close_postings_file()
         self._persist_ii()
         self._remove_all_parts()
+        os.remove(self._output + '/' + 'index.cii')
         self.do_callback("MERGEOK")
 
     def do_callback(self, message, *args):
@@ -177,6 +178,25 @@ class Index:
             term_id = self._get_or_create_term_id(stemmed_term)
             self._ii_dict.setdefault(term_id, set())
             self._ii_dict[term_id].add(self._document_dict.get(doc_key))
+
+    def compress(self):
+        try:
+            uncompressed = UncompressedPostings(self._output + '/' + 'index.ii')
+            ii_dict = pickle.load(open(self._output + '/' + 'ii.dict', 'rb'))
+            compressed = CompressedPostings(self._output + '/' + 'index.cii', mode='wb+')
+
+            for key in ii_dict:
+                metadata = ii_dict[key]
+                uncompressed_list = uncompressed.retrieve_postings_list(metadata[0], metadata[2])
+                new_metadata = compressed.compress(uncompressed_list)
+                ii_dict[key] = new_metadata
+
+            uncompressed.close_postings_file()
+            compressed.close_postings_file()
+            pickle.dump(ii_dict, open(self._output + '/' + 'ii.dict', 'wb'))
+            os.remove(self._output + '/' + 'index.ii')
+        except FileNotFoundError:
+            self.do_callback("IINF")
 
     def _get_or_create_term_id(self, term):
         if term not in self._term_dict.keys():
