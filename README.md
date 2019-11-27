@@ -1,3 +1,3 @@
 # NewsIndexer
 
-Leer [Informe](../informe.ipynb)
+Leer [Informe](./Informe.ipynb)
